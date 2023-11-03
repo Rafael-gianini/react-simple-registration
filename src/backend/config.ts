@@ -1,12 +1,21 @@
-import  firebase from "firebase";
-import 'firebase/firestone'
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore"
+import { useEffect } from "react";
 
-if (!firebase.apps.length) {
-    firebase.initializeApp({
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    })
-}
 
-export default firebase 
+
+const firebaseConfig = initializeApp({
+    apiKey: "AIzaSyD9nWCe2LXWSKCq4yHAcuaDTCaxA7IdfwI",
+    authDomain: "next-crud-21b21.firebaseapp.com",
+    projectId: "next-crud-21b21",
+    storageBucket: "next-crud-21b21.appspot.com",
+    messagingSenderId: "726240335162",
+    appId: "1:726240335162:web:52715ea81fcb719f5a6c03"
+});
+
+
+const db = getFirestore(firebaseConfig)
+
+
+
+export default db

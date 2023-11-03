@@ -1,50 +1,67 @@
 import Cliente from "@/core/Cliente";
+import db from "../config";
+import {collection, addDoc, updateDoc, doc, deleteDoc, query, orderBy, getDocs} from 'firebase/firestore'
 import ClienteRepositorio from "@/core/ClienteRepositorio";
-import firebase from "../config"
-
-
-export default class ColecaoCliente implements ClienteRepositorio {
-
-    #conversor = {
-        toFirestore(cliente: Cliente) {
-            return{
-                nome: cliente.nome,
-                idade: cliente.idade
+ 
+export default class ColecaoCliente implements ClienteRepositorio{
+ 
+    async salvar(cliente: Cliente): Promise<Cliente> {
+        //salvar temos 2 cenários
+        //cenário 1: se o cliente.id existir significa que vou alterar
+        //senão significa que irei adicionar um novo cliente
+ 
+        if(cliente?.id){
+            //altera um cliente
+            const taskDocRef = doc(db,'clientes',cliente.id)
+            try{
+                await updateDoc(taskDocRef, {
+                    nome: cliente.nome,
+                    idade: cliente.idade
+                })
+            }catch(err){
+                alert(err)
             }
-
-        },
-        fromFirestore(
-            snapshot: firebase.firestore.QueryDocumentSnapshot, 
-            options: firebase.firestore.SnapshotOptions) {
-            const dados = snapshot?.data(options)
-            return new Cliente(dados.nome, dados.idade, snapshot.id)
+            return cliente 
+        }else{
+            //adiciona um novo
+            try{
+                const docRef = await addDoc(collection(db,'clientes'), {
+                    nome: cliente.nome,
+                    idade:cliente.idade
+                })
+                const docId = docRef.id
+                return new Cliente(cliente.nome,cliente.idade,docId)
+            }catch(err){
+                alert(err)
+            }
+            return cliente
         }
     }
-
+ 
     async excluir(cliente: Cliente): Promise<void> {
-        return this.colecao().doc(cliente.id).delete()
+        if(cliente?.id){
+            const taskDocRef = doc(db,'clientes',cliente.id)
+            try{
+                await deleteDoc(taskDocRef)
+            }catch(err){
+                alert(err)
+            }
+        }else{
+            alert('ERRO: Id do cliente é nulo')
+        }
     }
-    async obterTodos(): Promise<Cliente[]> {
-        const query = await this.colecao().get()
-        return query.docs.map(doc => doc.data()) ?? []
-
-    }
-    async salvar(cliente: Cliente): Promise<Cliente>{
-        if (cliente?.id){
-            await this.colecao().doc(cliente.id).set(cliente)
-            return cliente
-        } else {
-            const docRef = await this.colecao().add(cliente)
-            const doc = await docRef.get()
-            return doc.data()
-        }      
-        
-    }
-
-    private colecao() {
-        return firebase
-               .firestore()
-               .collection('clientes')
-               .withConverter(this.#conversor)
+ 
+     async obterTodos(): Promise<Cliente[]>{
+        const clientes:Cliente[] = []
+        try{
+            const q = query(collection(db,'clientes'), orderBy('nome'))
+            const docs = await getDocs(q)
+            docs.forEach(doc => {
+                clientes.push(new Cliente(doc.data().nome,doc.data().idade,doc.id))
+            })
+        }catch(err){
+            alert(err)
+        }
+        return clientes
     }
 }
